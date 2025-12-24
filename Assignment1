@@ -1,0 +1,112 @@
+#Execute following queries on "emp" and "dept" dataset using CTE.
+
+1. Find emp with max sal of each dept.
+with max_sal as
+with sum_sal as  (select deptno, sum(sal) sum from emp group by deptno) select * from sum_sal;
++--------+----------+
+| deptno | sum      |
++--------+----------+
+|     20 | 10675.00 |
+|     30 |  9200.00 |
+|     10 |  8550.00 |
++--------+----------+
+
+2. Find avg of deptwise total sal.
+with sum_sal as 
+    -> (select deptno, sum(sal) sum from emp group by deptno)
+    -> select avg(sum) as avg from sum_sal;
++-------------+
+| avg         |
++-------------+
+| 9475.000000 |
++-------------+
+
+3. Compare (show side-by-side) sal of each emp with avg sal in his dept and avg sal for his job.
+with avg_sal as (select deptno , avg(sal) avg from emp group by deptno) ,
+job_avgsal as (select job, avg(sal) jobavg from emp group by job) 
+select e.ename, e.sal, e.deptno , a.avg, js.jobavg from emp e join job_avgsal js on e.job = js.job join avg_sal a on e.deptno = a.deptno;
++--------+---------+--------+-------------+-------------+
+| ename  | sal     | deptno | avg         | jobavg      |
++--------+---------+--------+-------------+-------------+
+| SMITH  |  600.00 |     20 | 2135.000000 |  887.500000 |
+| ALLEN  | 1600.00 |     30 | 1533.333333 | 1400.000000 |
+| WARD   | 1250.00 |     30 | 1533.333333 | 1400.000000 |
+| JONES  | 2975.00 |     20 | 2135.000000 | 2758.333333 |
+| MARTIN | 1250.00 |     30 | 1533.333333 | 1400.000000 |
+| BLAKE  | 2850.00 |     30 | 1533.333333 | 2758.333333 |
+| CLARK  | 2450.00 |     10 | 2850.000000 | 2758.333333 |
+| SCOTT  | 3000.00 |     20 | 2135.000000 | 3000.000000 |
+| KING   | 5000.00 |     10 | 2850.000000 | 5000.000000 |
+| TURNER | 1500.00 |     30 | 1533.333333 | 1400.000000 |
+| ADAMS  | 1100.00 |     20 | 2135.000000 |  887.500000 |
+| JAMES  |  750.00 |     30 | 1533.333333 |  887.500000 |
+| FORD   | 3000.00 |     20 | 2135.000000 | 3000.000000 |
+| MILLER | 1100.00 |     10 | 2850.000000 |  887.500000 |
++--------+---------+--------+-------------+-------------+
+
+
+4. Divide emps by category -- Poor < 1500, 1500 <= Middle <= 2500, Rich > 2500. Hint: CASE ... WHEN. Count emps for each category.
+with categories as 
+    -> (select ename, empno, sal, deptno,case
+    -> when sal < 1500 then 'poor'
+    -> when sal between 1500 and 2500 then 'middle'
+    -> else 'rich'
+    -> end category
+    -> from emp)
+    -> select category ,count(category)from categories group by category;
++----------+-----------------+
+| category | count(category) |
++----------+-----------------+
+| poor     |               6 |
+| middle   |               3 |
+| rich     |               5 |
++----------+-----------------+
+
+5. Display emps with category (as above), empno, ename, sal and dname.
+with categories as 
+    -> (select ename, empno, sal ,deptno, case
+    -> when sal < 1500 then 'poor'
+    -> when sal between 1500 and 2500 then 'middle'
+    -> else 'rich'
+    -> end category
+    -> from emp)
+    -> select c.empno, c.ename, c.sal, c.category, c.deptno, d.dname  from categories c join dept d on c.deptno = d.deptno;
++-------+--------+---------+----------+--------+------------+
+| empno | ename  | sal     | category | deptno | dname      |
++-------+--------+---------+----------+--------+------------+
+|  7369 | SMITH  |  600.00 | poor     |     20 | RESEARCH   |
+|  7499 | ALLEN  | 1600.00 | middle   |     30 | SALES      |
+|  7521 | WARD   | 1250.00 | poor     |     30 | SALES      |
+|  7566 | JONES  | 2975.00 | rich     |     20 | RESEARCH   |
+|  7654 | MARTIN | 1250.00 | poor     |     30 | SALES      |
+|  7698 | BLAKE  | 2850.00 | rich     |     30 | SALES      |
+|  7782 | CLARK  | 2450.00 | middle   |     10 | ACCOUNTING |
+|  7788 | SCOTT  | 3000.00 | rich     |     20 | RESEARCH   |
+|  7839 | KING   | 5000.00 | rich     |     10 | ACCOUNTING |
+|  7844 | TURNER | 1500.00 | middle   |     30 | SALES      |
+|  7876 | ADAMS  | 1100.00 | poor     |     20 | RESEARCH   |
+|  7900 | JAMES  |  750.00 | poor     |     30 | SALES      |
+|  7902 | FORD   | 3000.00 | rich     |     20 | RESEARCH   |
+|  7934 | MILLER | 1100.00 | poor     |     10 | ACCOUNTING |
++-------+--------+---------+----------+--------+------------+
+
+6. Count number of emps in each dept for each category (as above).#
+with categories as 
+    -> (select ename, empno, sal, deptno, case
+    -> when sal < 1500 then 'poor'
+    -> when sal between 1500 and 2500 then 'middle'
+    -> else 'rich'
+    -> end category from emp)
+    -> select deptno, category, count(*) from categories group by category, deptno order by deptno,category;
++--------+----------+----------+
+| deptno | category | count(*) |
++--------+----------+----------+
+|     10 | middle   |        1 |
+|     10 | poor     |        1 |
+|     10 | rich     |        1 |
+|     20 | poor     |        2 |
+|     20 | rich     |        3 |
+|     30 | middle   |        2 |
+|     30 | poor     |        3 |
+|     30 | rich     |        1 |
++--------+----------+----------+
